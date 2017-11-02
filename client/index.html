@@ -1,0 +1,86 @@
+<html>
+    <head>
+        <script src="/js/jquery.min.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+    </head>
+    <body>
+        <center>
+            GOL
+            <br>
+            <canvas id="display" width="300" height="300"
+             style="border:1px solid #000000;"></canvas>
+            <script type="text/javascript">
+                //Socket setup
+                var socket = io.connect();
+                var board = [];
+                var cellSize = 30;
+                
+                //Canvas Setup
+                var canvas = document.getElementById("display"),
+                    ctx = canvas.getContext('2d'),
+                    cLeft = canvas.offsetLeft,
+                    cTop = canvas.offsetTop;
+                canvas.addEventListener('mousedown', function(e){
+                    var rect = canvas.getBoundingClientRect();
+                    var x = e.x - rect.left;
+                    var y = e.y - rect.top;
+                    
+                    var x = Math.floor(x / cellSize);
+                    var y = Math.floor(y / cellSize);
+                    
+                    //Change array based on click
+                    if(board[y][x] == 0){
+                        board[y][x] = 1;
+                    }else{
+                        board[y][x] = 0;
+                    }
+                    drawAll();
+                    
+                    //Send data back to server
+                    console.log("Sending data back to server");
+                    socket.emit('updateServer', board);
+                });
+            
+                //On document ready
+                $(function(){
+                    //Connect Socket
+                    socket.on('connect', function(){
+                        console.log('Socket Connected Successfully!');
+                        socket.emit('requestBoard');
+                  });
+                });
+                
+                socket.on('updateClient', function(newBoard){
+                  board = newBoard;
+                  drawAll(newBoard);
+                  console.log('Updated local board.');
+                });
+                
+                function coord(x, y){
+                    this.x = x;
+                    this.y = y;
+                }
+                
+                function draw(x, y){
+                    var tile = board[x][y];
+                    if(board[y][x] == 1){
+                        ctx.fillStyle="green";
+                    }else{
+                        ctx.fillStyle="red";
+                    }
+                    ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                }
+                
+                function drawAll(newBoard){
+                    for(var r=0; r<board.length; r++){
+                        for(var c=0; c<board[r].length; c++){
+                            draw(r, c);
+                        }
+                    }
+                }
+            </script>
+        </center>
+    </body>
+</html>
